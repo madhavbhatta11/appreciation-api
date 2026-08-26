@@ -1,65 +1,17 @@
-
 from fastapi import FastAPI, Depends, Request, HTTPException
-from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from sqlalchemy.orm import Session
 
-
-# ==========================================
-# DATABASE CONFIGURATION
-# ==========================================
-
-DATABASE_URL = "sqlite:///./appreciation.db"
-
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}
+from app.database import Base, engine, get_db
+from app.models import Appreciation
+from app.schemas import (
+    HomeResponse,
+    AppreciationResponse,
+    AppreciationCountResponse,
 )
-
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
-
-Base = declarative_base()
-
-
-# ==========================================
-# DATABASE MODEL
-# ==========================================
-
-class Appreciation(Base):
-    __tablename__ = "appreciations"
-
-    id = Column(Integer, primary_key=True, index=True)
-    ip_address = Column(
-        String,
-        unique=True,
-        nullable=False,
-        index=True
-    )
 
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
-
-
-# ==========================================
-# PYDANTIC RESPONSE MODELS
-# ==========================================
-
-class HomeResponse(BaseModel):
-    message: str
-
-
-class AppreciationResponse(BaseModel):
-    message: str
-    id: int
-
-
-class AppreciationCountResponse(BaseModel):
-    count: int
 
 
 # ==========================================
@@ -71,19 +23,6 @@ app = FastAPI(
     description="A simple API that allows visitors to appreciate a website once.",
     version="1.0.0"
 )
-
-
-# ==========================================
-# DATABASE DEPENDENCY
-# ==========================================
-
-def get_db():
-    db = SessionLocal()
-
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 # ==========================================
@@ -164,4 +103,3 @@ def get_appreciations(
     return {
         "count": count
     }
-
