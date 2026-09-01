@@ -57,8 +57,7 @@ client = TestClient(app)
 def reset_database():
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
-
-
+    yield
 # ==========================================
 # TESTS
 # ==========================================

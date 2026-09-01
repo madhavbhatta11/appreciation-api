@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+```
+<title>Appreciation API</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-family: Arial, sans-serif;
+
+        background: #111;
+        color: #fff;
+    }
+
+    .container {
+        width: min(90%, 500px);
+        padding: 40px;
+
+        text-align: center;
+
+        background: #1c1c1c;
+        border: 1px solid #333;
+        border-radius: 16px;
+    }
+
+    h1 {
+        margin-top: 0;
+        margin-bottom: 12px;
+    }
+
+    .description {
+        color: #aaa;
+        margin-bottom: 30px;
+    }
+
+    .heart {
+        font-size: 60px;
+        margin-bottom: 20px;
+    }
+
+    button {
+        padding: 13px 28px;
+
+        border: none;
+        border-radius: 8px;
+
+        background: #fff;
+        color: #111;
+
+        font-size: 16px;
+        font-weight: bold;
+
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #ddd;
+    }
+
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .count {
+        margin-top: 30px;
+
+        font-size: 20px;
+    }
+
+    #message {
+        min-height: 24px;
+        margin-top: 20px;
+        color: #aaa;
+    }
+</style>
+```
+
+</head>
+
+<body>
+
+```
+<div class="container">
+
+    <div class="heart">❤️</div>
+
+    <h1>Appreciation API</h1>
+
+    <p class="description">
+        A small real-world application powered by my FastAPI backend.
+    </p>
+
+    <button id="appreciateButton">
+        Appreciate
+    </button>
+
+    <div id="message"></div>
+
+    <div class="count">
+        Total appreciations:
+        <strong id="count">Loading...</strong>
+    </div>
+
+</div>
+
+<script>
+
+    const API_URL = "http://127.0.0.1:8000";
+
+    const button = document.getElementById("appreciateButton");
+    const message = document.getElementById("message");
+    const countElement = document.getElementById("count");
+
+
+    // ------------------------------------------
+    // GET APPRECIATION COUNT
+    // ------------------------------------------
+
+    async function loadCount() {
+
+        try {
+
+            const response = await fetch(
+                `${API_URL}/appreciations`
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to load count");
+            }
+
+            const data = await response.json();
+
+            countElement.textContent = data.count;
+
+        } catch (error) {
+
+            countElement.textContent = "Unavailable";
+
+            message.textContent =
+                "Could not connect to the API.";
+
+        }
+    }
+
+
+    // ------------------------------------------
+    // SEND APPRECIATION
+    // ------------------------------------------
+
+    async function appreciate() {
+
+        button.disabled = true;
+
+        message.textContent = "Sending...";
+
+        try {
+
+            const response = await fetch(
+                `${API_URL}/appreciate`,
+                {
+                    method: "POST"
+                }
+            );
+
+            const data = await response.json();
+
+
+            if (response.status === 201) {
+
+                message.textContent =
+                    data.message;
+
+                await loadCount();
+
+            }
+
+            else if (response.status === 409) {
+
+                message.textContent =
+                    data.detail;
+
+            }
+
+            else {
+
+                message.textContent =
+                    "Something went wrong.";
+
+            }
+
+        } catch (error) {
+
+            message.textContent =
+                "Could not connect to the API.";
+
+        }
+
+        button.disabled = false;
+    }
+
+
+    button.addEventListener(
+        "click",
+        appreciate
+    );
+
+
+    // Load initial count
+    loadCount();
+
+</script>
+```
+
+</body>
+</html>
