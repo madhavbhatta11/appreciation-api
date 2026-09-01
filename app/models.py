@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 
 from app.database import Base
 
@@ -8,9 +8,15 @@ class Appreciation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    ip_address = Column(
-        String(45),
+    visitor_id = Column(
+        String(36),
         unique=True,
         nullable=False,
         index=True
+    )
+
+    appreciated = Column(
+        Boolean,
+        default=True,
+        nullable=False
     )

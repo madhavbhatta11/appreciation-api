@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Depends, Request, HTTPException
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
 
 from app.database import Base, engine, get_db
 from app.models import Appreciation
@@ -9,6 +10,7 @@ from app.schemas import (
     HomeResponse,
     AppreciationResponse,
     AppreciationCountResponse,
+    AppreciationStatusResponse,
 )
 
 
@@ -29,7 +31,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,6 +50,7 @@ app.add_middleware(
     response_model=HomeResponse
 )
 def home():
+
     return {
         "message": "Appreciation API is running"
     }
@@ -60,20 +66,18 @@ def home():
     status_code=201,
     responses={
         409: {
-            "description": "This IP address has already appreciated the website."
+            "description": "This visitor has already appreciated the website."
         }
     }
 )
 def appreciate(
-    request: Request,
+    visitor_id: str,
     db: Session = Depends(get_db)
 ):
 
-    ip_address = request.client.host
-
     existing_appreciation = (
         db.query(Appreciation)
-        .filter(Appreciation.ip_address == ip_address)
+        .filter(Appreciation.visitor_id == visitor_id)
         .first()
     )
 
@@ -84,7 +88,8 @@ def appreciate(
         )
 
     appreciation = Appreciation(
-        ip_address=ip_address
+        visitor_id=visitor_id,
+        appreciated=True
     )
 
     db.add(appreciation)
@@ -92,6 +97,7 @@ def appreciate(
     try:
         db.commit()
         db.refresh(appreciation)
+
     except IntegrityError:
         db.rollback()
 
@@ -107,6 +113,30 @@ def appreciate(
 
 
 # ==========================================
+# GET APPRECIATION STATUS
+# ==========================================
+
+@app.get(
+    "/appreciation/status",
+    response_model=AppreciationStatusResponse
+)
+def appreciation_status(
+    visitor_id: str,
+    db: Session = Depends(get_db)
+):
+
+    appreciation = (
+        db.query(Appreciation)
+        .filter(Appreciation.visitor_id == visitor_id)
+        .first()
+    )
+
+    return {
+        "appreciated": appreciation is not None
+    }
+
+
+# ==========================================
 # GET APPRECIATION COUNT
 # ==========================================
 
@@ -118,7 +148,11 @@ def get_appreciations(
     db: Session = Depends(get_db)
 ):
 
-    count = db.query(Appreciation).count()
+    count = (
+        db.query(Appreciation)
+        .filter(Appreciation.appreciated.is_(True))
+        .count()
+    )
 
     return {
         "count": count
