@@ -109,3 +109,16 @@ def test_count_after_appreciation():
     assert response.status_code == 200
     assert response.json()["count"] == 1
 
+
+def test_duplicate_does_not_increase_count():
+    first_response = client.post("/appreciate")
+    second_response = client.post("/appreciate")
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 409
+
+    response = client.get("/appreciations")
+
+    assert response.status_code == 200
+    assert response.json()["count"] == 1
+

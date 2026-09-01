@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, Request, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
@@ -77,8 +78,17 @@ def appreciate(
     )
 
     db.add(appreciation)
-    db.commit()
-    db.refresh(appreciation)
+
+    try:
+        db.commit()
+        db.refresh(appreciation)
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail="You have already appreciated this website."
+        )
 
     return {
         "message": "Thank you for the appreciation!",
